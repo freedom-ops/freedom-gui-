@@ -1,0 +1,137 @@
+-- GUI SETUP
+local player = game.Players.LocalPlayer
+local mouse = player:GetMouse()
+
+-- Criar a ScreenGui
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "ModMenu"
+
+-- Criar a bola (botão flutuante)
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 50, 0, 50)
+toggleButton.Position = UDim2.new(0, 100, 0, 100)
+toggleButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+toggleButton.Text = "⚙️"
+toggleButton.Draggable = true
+toggleButton.Active = true
+toggleButton.Parent = screenGui
+
+-- Criar o menu principal (Frame)
+local menuFrame = Instance.new("Frame")
+menuFrame.Size = UDim2.new(0, 200, 0, 240)
+menuFrame.Position = UDim2.new(0, 160, 0, 100)
+menuFrame.BackgroundColor3 = Color3.fromRGB(120, 0, 255)
+menuFrame.Visible = false
+menuFrame.Parent = screenGui
+
+-- Botões do menu
+local function createButton(text, yPosition)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(1, 0, 0, 40)
+	button.Position = UDim2.new(0, 0, 0, yPosition)
+	button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.SourceSansBold
+	button.TextSize = 18
+	button.Text = text
+	button.Parent = menuFrame
+	return button
+end
+
+local speedButton = createButton("Velocidade+", 0)
+local jumpButton = createButton("Pulo Infinito", 50)
+local noclipButton = createButton("Atravessar Paredes", 100)
+local resetButton = createButton("Resetar Personagem", 150)
+local noRagdollButton = createButton("Sem Ragdoll", 200)
+
+-- Alternar menu com a bola
+toggleButton.MouseButton1Click:Connect(function()
+	menuFrame.Visible = not menuFrame.Visible
+end)
+
+-- VELOCIDADE
+local speedOn = false
+speedButton.MouseButton1Click:Connect(function()
+	speedOn = not speedOn
+	if speedOn then
+		player.Character.Humanoid.WalkSpeed = 40
+		speedButton.Text = "Velocidade: ON"
+	else
+		player.Character.Humanoid.WalkSpeed = 16
+		speedButton.Text = "Velocidade: OFF"
+	end
+end)
+
+-- Corrigir velocidade ao morrer
+player.CharacterAdded:Connect(function(char)
+	char:WaitForChild("Humanoid")
+	if speedOn then
+		char.Humanoid.WalkSpeed = 40
+	end
+end)
+
+-- PULO INFINITO
+local infiniteJumpEnabled = false
+jumpButton.MouseButton1Click:Connect(function()
+	infiniteJumpEnabled = not infiniteJumpEnabled
+	jumpButton.Text = infiniteJumpEnabled and "Pulo Infinito: ON" or "Pulo Infinito: OFF"
+end)
+
+game:GetService("UserInputService").JumpRequest:Connect(function()
+	if infiniteJumpEnabled and player.Character then
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)
+
+-- NOCLIP
+local noclip = false
+noclipButton.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipButton.Text = noclip and "NoClip: ON" or "NoClip: OFF"
+
+	if not noclip and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+	end
+end)
+
+game:GetService("RunService").Stepped:Connect(function()
+	if noclip and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+-- RESETAR PERSONAGEM
+resetButton.MouseButton1Click:Connect(function()
+	if player.Character then
+		player.Character:BreakJoints()
+	end
+end)
+
+-- SEM RAGDOLL
+local noRagdoll = false
+noRagdollButton.MouseButton1Click:Connect(function()
+	noRagdoll = not noRagdoll
+	noRagdollButton.Text = noRagdoll and "Sem Ragdoll: ON" or "Sem Ragdoll: OFF"
+end)
+
+-- Prevenir ragdoll forçando estado do Humanoid
+game:GetService("RunService").Heartbeat:Connect(function()
+	if noRagdoll and player.Character then
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.PlatformStand then
+			humanoid.PlatformStand = false
+		end
+	end
+end)
+
